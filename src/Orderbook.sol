@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
+// AI Usage: Gemini for Solidity syntax info and exposed base functions
 pragma solidity ^0.8.20;
 
 import {IOrderbook} from "./IOrderbook.sol";
@@ -116,7 +117,63 @@ contract Orderbook is IOrderbook {
     }
 
     function placeMarketOrder(Side side, uint256 amount) external {
-        revert("NotImplemented");
+        
+        if (side == Side.BUY) {
+            while (amount > 0 && asks.length > 0) {
+
+                address seller = asks[0].maker;
+                uint256 askPrice = asks[0].price;
+                uint256 amountMatched;
+
+                if (amount < asks[0].amount) {
+                    amountMatched = amount;
+                    asks[0].amount -= amountMatched;
+                } else {
+                    amountMatched = asks[0].amount;
+
+                    for (uint256 i = 0; i < asks.length - 1; i++) {
+                        asks[i] = asks[i + 1];
+                    }
+
+                    asks.pop();
+                }
+
+                uint256 quoteAmount = amountMatched * askPrice / 1e18;
+                
+                quoteToken.transferFrom(msg.sender, address(this), quoteAmount);
+                quoteToken.transfer(seller, quoteAmount);
+                baseToken.transfer(msg.sender, amountMatched);
+
+                amount -= amountMatched;
+            }
+        } else {
+            while (amount > 0 && bids.length > 0) {
+                address buyer = bids[0].maker;
+                uint256 bidPrice = bids[0].price;
+                uint256 amountMatched;
+
+                if (amount < bids[0].amount) {
+                        amountMatched = amount;
+                        bids[0].amount -= amountMatched;
+                } else {
+                    amountMatched = bids[0].amount;
+
+                    for (uint256 i = 0; i < bids.length - 1; i++) {
+                        bids[i] = bids[i + 1];
+                    }
+
+                    bids.pop();
+                }
+
+                uint256 quoteAmount = amountMatched * bidPrice / 1e18;
+
+                baseToken.transferFrom(msg.sender, address(this), amountMatched);
+                baseToken.transfer(buyer, amountMatched);
+                quoteToken.transfer(msg.sender, quoteAmount);
+
+                amount -= amountMatched;
+            }
+        }
     }
 
     function clear() external {
