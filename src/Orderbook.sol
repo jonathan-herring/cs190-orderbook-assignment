@@ -28,6 +28,16 @@ contract Orderbook is IOrderbook {
     IERC20 public immutable baseToken;
     IERC20 public immutable quoteToken;
 
+    struct Order {
+        address maker;
+        uint256 amount;
+        uint256 price;
+    }
+
+    Order[] private bids;
+    Order[] private asks;
+    uint256 private nextOrderId = 1;
+
     /// @dev Suggested events. These are a starting point — your
     ///      implementation may emit a different set, rename them, or omit
     ///      events entirely. Nothing in the grading harness depends on
