@@ -74,7 +74,45 @@ contract Orderbook is IOrderbook {
     }
 
     function placeLimitOrder(Side side, uint256 price, uint256 amount) external returns (uint256) {
-        revert("NotImplemented");
+        
+        Order memory order = Order({maker: msg.sender, price: price, amount: amount});
+
+        if (side == Side.BUY) {
+            uint256 quoteAmount = amount * price / 1e18;
+            quoteToken.transferFrom(msg.sender, address(this), quoteAmount);
+
+            uint i = 0;
+            while (i < bids.length && bids[i].price >= order.price) {
+                i++;
+            }
+            
+            bids.push(order);
+            uint256 j = bids.length - 1;
+            while(j > i) {
+                bids[j] = bids[j - 1];
+                j--;
+            }
+
+            bids[i] = order;
+        } else {
+            baseToken.transferFrom(msg.sender, address(this), amount);
+
+            uint i = 0;
+            while (i < asks.length && asks[i].price <= order.price) {
+                i++;
+            }
+
+            asks.push(order);
+            uint256 j = asks.length - 1;
+            while(j > i) {
+                asks[j] = asks[j - 1];
+                j--;
+            }
+
+            asks[i] = order;
+        }
+
+        return nextOrderId++;
     }
 
     function placeMarketOrder(Side side, uint256 amount) external {
@@ -82,15 +120,16 @@ contract Orderbook is IOrderbook {
     }
 
     function clear() external {
-        revert("NotImplemented");
+        delete bids;
+        delete asks;
     }
 
     function getBidsCount() external view returns (uint256) {
-        revert("NotImplemented");
+        return bids.length;
     }
 
     function getAsksCount() external view returns (uint256) {
-        revert("NotImplemented");
+        return asks.length;
     }
 
     function getMidPrice() external view returns (uint256) {
