@@ -133,6 +133,9 @@ contract Orderbook is IOrderbook {
     }
 
     function getMidPrice() external view returns (uint256) {
-        revert("NotImplemented");
+        require(bids.length > 0, "there are no bids");
+        require(asks.length > 0, "there are no asks");
+
+        return (bids[0].price + asks[0].price) / 2;
     }
 }
